@@ -240,13 +240,15 @@ def main():
         print("ERRORE: mancano EMAIL_TO ed EMAIL_APP_PASSWORD (seguire la guida).")
         sys.exit(1)
 
+    # Crea o aggiorna lo stato a ogni esecuzione, anche a mercato chiuso:
+    # cosi' state.json esiste sempre e GitHub mantiene attive le azioni programmate.
+    state = load_state()
+    state["last_check"] = today
+    save_state(state)
+
     if not market_open(now_et):
         print("Mercato USA chiuso: nessun controllo da fare.")
         return
-
-    state = load_state()
-    # Aggiorna last_check: serve a GitHub per non disattivare le azioni programmate
-    state["last_check"] = today
 
     rows, eurusd = fetch_data()
     if not rows:
