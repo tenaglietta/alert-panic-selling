@@ -84,6 +84,11 @@ WATCHLIST = {
     # Power per l'AI
     "VST": "Vistra",
     "CEG": "Constellation Energy",
+    # Aggiunti a mano
+    "BE": "Bloom Energy",
+    "AXTI": "AXT",
+    "STX": "Seagate Technology",
+    "COHR": "Coherent",
 }
 
 THRESHOLD_PCT = float(os.environ.get("THRESHOLD_PCT", "-7"))
