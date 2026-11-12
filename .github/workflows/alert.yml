@@ -28,7 +28,7 @@ jobs:
         env:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
-          THRESHOLD_PCT: "-7"
+          THRESHOLD_PCT: "-5"
         run: python monitor.py
 
       - name: Salva lo stato (evita alert ripetuti)
