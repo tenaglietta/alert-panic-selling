@@ -2,9 +2,12 @@ name: Alert panic selling
 
 on:
   schedule:
-    # Ogni 15 minuti, dalle 13 alle 21 UTC (copre le 14:30-22:00 italiane),
-    # dal lunedì al venerdì. GitHub può ritardare l'avvio di qualche minuto.
-    - cron: "*/15 13-21 * * 1-5"
+    # Ogni 5 minuti, dalle 13 alle 15 UTC, dal lunedì al venerdì: copre i
+    # "10 minuti dopo l'apertura" di Wall Street sia con l'ora solare
+    # (15:40 italiane) sia con quella legale (14:40 italiane). Lo script
+    # agisce solo nella finestra utile e manda l'alert una sola volta al
+    # giorno. GitHub può ritardare l'avvio di qualche minuto.
+    - cron: "*/5 13-15 * * 1-5"
   # permette l'avvio manuale, per i test
   workflow_dispatch:
 
@@ -28,7 +31,9 @@ jobs:
         env:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
-          THRESHOLD_PCT: "-5"
+          THRESHOLD_PCT: "-7"
+          # i lanci manuali ignorano la finestra oraria, per testare sempre
+          FORCE_CHECK: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: python monitor.py
 
       - name: Salva lo stato (evita alert ripetuti)
