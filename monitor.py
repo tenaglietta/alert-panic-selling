@@ -9,6 +9,9 @@ scende oltre la soglia (default -7%) rispetto alla chiusura precedente.
 Dati: Yahoo Finance (gratuito, tramite la libreria yfinance).
 Email: Gmail SMTP con app password.
 Esecuzione: pensato per GitHub Actions (vedi .github/workflows/alert.yml).
+Il controllo avviene una volta al giorno, 10 minuti dopo l'apertura di
+Wall Street: il workflow esegue lo script ogni 5 minuti nelle ore giuste
+e lo script agisce solo nella finestra utile (9:39-10:05 ora di New York).
 
 Variabili d'ambiente (impostate dal workflow, mai scritte nel codice):
   EMAIL_TO            indirizzo Gmail che invia e riceve le notifiche
@@ -92,11 +95,19 @@ WATCHLIST = {
 }
 
 THRESHOLD_PCT = float(os.environ.get("THRESHOLD_PCT", "-7"))
+FORCE_CHECK = os.environ.get("FORCE_CHECK", "").strip() == "1"
 EMAIL_TO = os.environ.get("EMAIL_TO", "").strip()
 EMAIL_APP_PASSWORD = os.environ.get("EMAIL_APP_PASSWORD", "").strip()
 
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
 ET = ZoneInfo("America/New_York")
+
+# Finestra di controllo: 10 minuti dopo l'apertura di Wall Street (9:30 ora di
+# New York). Il programma agisce solo se eseguito tra le 9:39 e le 10:05 di
+# New York, espresse in minuti dalla mezzanotte. La finestra e' larga per
+# assorbire i ritardi di avvio di GitHub.
+WINDOW_START_MIN = 9 * 60 + 39
+WINDOW_END_MIN = 10 * 60 + 5
 
 
 # ------------------------------------------------------------------
@@ -122,12 +133,12 @@ def save_state(state):
 # LOGICA
 # ------------------------------------------------------------------
 
-def market_open(now_et):
-    """True se il mercato USA e' aperto (lun-ven 9:30-16:00 ora di New York)."""
+def in_check_window(now_et):
+    """True se siamo nella finestra utile: 10 minuti dopo l'apertura USA."""
     if now_et.weekday() >= 5:
         return False
     minutes = now_et.hour * 60 + now_et.minute
-    return (9 * 60 + 30) <= minutes <= (16 * 60)
+    return WINDOW_START_MIN <= minutes <= WINDOW_END_MIN
 
 
 def fetch_data():
@@ -251,8 +262,8 @@ def main():
     state["last_check"] = today
     save_state(state)
 
-    if not market_open(now_et):
-        print("Mercato USA chiuso: nessun controllo da fare.")
+    if not FORCE_CHECK and not in_check_window(now_et):
+        print("Fuori dalla finestra di controllo (10 minuti dopo l'apertura USA): esco.")
         return
 
     rows, eurusd = fetch_data()
